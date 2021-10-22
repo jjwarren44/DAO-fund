@@ -3,15 +3,15 @@ const DAO = artifacts.require("DAO");
 
 contract("DAO", (accounts) => {
     let dao = null;
-    let admin = accounts[0];
-    let investor1 = accounts[1];
-    let investor2 = accounts[2];
-    let investor3 = accounts[3];
-    let nonInvestor = accounts[4];
+    const admin = accounts[0];
+    const investor1 = accounts[1];
+    const investor2 = accounts[2];
+    const investor3 = accounts[3];
+    const nonInvestor = accounts[4];
 
     // contract parameters
-    const contributionTime = 30;
-    const voteTime = 30;
+    const contributionTime = 300;
+    const voteTime = 300;
     const quorum = 50;
 
     beforeEach(async() => {
@@ -79,4 +79,25 @@ contract("DAO", (accounts) => {
 
         assert(balanceAfterBN.sub(balanceBeforeBN).toNumber() === 1000);
     });
+
+    it("should create proposal", async() => {
+        await dao.contribute({ from: investor1, value: 1000 });
+        await dao.createProposal("token", 1000, accounts[5], { from: investor1 });
+        const proposal = await dao.proposals(0);
+
+        assert(proposal.name === "token");
+        assert(proposal.amount.toNumber() === 1000);
+        assert(proposal.recipient === accounts[5]);
+        assert(proposal.votes.toNumber() === 0);
+        assert(proposal.executed === false);
+    });
+
+    it("should NOT allow a non-investor to create proposal", async() => {
+        await dao.contribute({ from: investor1, value: 1000 });
+        expectRevert(
+            dao.createProposal("token", 1000, accounts[5], { from: investor1 }),
+            "only investors"
+        );
+    });
+
 })
